@@ -18,7 +18,7 @@ class ConvertidorImagenes(ctk.CTk):
         self.lbl_contador = ctk.CTkLabel(self, text="0 imágenes seleccionadas")
         self.lbl_contador.pack()
 
-        # 2. Selector de formato
+        # 2. Selector de formato 
         self.formato_var = ctk.StringVar(value="WEBP")
         self.menu_formato = ctk.CTkOptionMenu(self, values=["WEBP", "JPG", "PNG", "ICO"], variable=self.formato_var)
         self.menu_formato.pack(pady=15)
