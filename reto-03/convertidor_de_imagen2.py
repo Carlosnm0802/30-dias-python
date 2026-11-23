@@ -27,7 +27,7 @@ class ImageConverterApp:
         ttk.Label(master, text="Image Converter Tool", style="Title.TLabel").pack(pady=20)
         
         #Select images
-        ttk.Button(master, text="Select Images", command=self.select_images).pack(pady=10)
+        ttk.Button(master, text="Select Images", command=self.select_files).pack(pady=10)
         
         #Format option
         self.output_format = StringVar(master)
@@ -83,4 +83,34 @@ class ImageConverterApp:
                 print(f"Error processing file {file}: {e}")
                 
         messagebox.showinfo("Process Completed", "Image resizing completed.")
+    
+    def convert_images(self):
+        if not self.selected_files:
+            messagebox.showwarning("No Files Selected", "Please select images first.")
+            return
+        format_selected = self.output_format.get().upper()
+        output_dir = filedialog.askdirectory(title="Select Output Folder")
+        if not output_dir: 
+            return 
+        for file in self.selected_files:
+            try:
+                img = Image.open(file).convert("RGB")
+                file_name = os.path.splitext(os.path.basename(file))[0]
+                output_path = os.path.join(output_dir, f"{file_name}.{format_selected.lower()}")
+                img.save(output_path, format_selected)
+            except Exception as e:
+                print(f"Error processing file {file}: {e}")
+        
+        messagebox.showinfo("Process Completed", "Image conversion completed.")
+        
+#Simple prompt using dialog
+def simple_prompt(title, default=""):
+    from tkinter.simpledialog import askstring
+    return askstring("Input", title, initialvalue=default)
+
+#Run the app
+if __name__ == "__main__":
+    root = Tk()
+    app = ImageConverterApp(root)
+    root.mainloop()
         
