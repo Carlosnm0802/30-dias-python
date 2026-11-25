@@ -21,5 +21,20 @@ def kg_to_pounds():
     kg1=kg.get()
     pounds=kg1 * 2.20462
     Label(window,text=f"{kg1} kg son {pounds} libras").pack()
-    
+#Funcion para convertir kg a onzas
+def kg_to_ounces():
+    kg1=kg.get()
+    ounces=kg1 * 35.274
+    Label(window,text=f"{kg1} kg son {ounces} onzas").pack()
 
+#Labels para ingresar valores
+Label(window,text="Ingrese el peso en kg:").pack()
+Entry(window,textvariable=kg).pack()
+
+#Creamos los botones
+Button(window,text="Convertir a gramos",command=kg_to_grams).pack()
+Button(window,text="Convertir a libras",command=kg_to_pounds).pack()
+Button(window,text="Convertir a onzas",command=kg_to_ounces).pack()
+
+#Iniciamos el loop de la ventana
+window.mainloop()
