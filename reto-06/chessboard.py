@@ -26,8 +26,36 @@ class Tablero:
         piezas_negras = ["t", "c", "a", "q", "k", "a", "c", "t"]
         self.tablero[0] = piezas_negras
         self.tablero[7] = piezas_blancas
+
+    def convertir_coordenadas(self, coordenada):
+        """Convierte 'e2' en índices [fila, columna]"""
+        columna = ord(coordenada[0].upper()) - ord('A')  # e → 4
+        fila = 8 - int(coordenada[1])                     # 2 → 6
+        return fila, columna
+
+    def mover_pieza(self, origen, destino):
+        """Mueve una pieza de origen a destino"""
+        fila_o, col_o = self.convertir_coordenadas(origen)
+        fila_d, col_d = self.convertir_coordenadas(destino)
+        
+        # Verificar que haya una pieza en origen
+        if self.tablero[fila_o][col_o] == ".":
+            print(f"Error: No hay pieza en {origen}")
+            return
+        
+        # Mover la pieza
+        pieza = self.tablero[fila_o][col_o]
+        self.tablero[fila_d][col_d] = pieza
+        self.tablero[fila_o][col_o] = "."
         
 if __name__ == "__main__":
     tablero = Tablero()
-    tablero.inicializar_piezas()
+    tablero.mostrar()
+    
+    print("\nMovimiento 1: e2 → e4 (Peón blanco)")
+    tablero.mover_pieza("e2", "e4")
+    tablero.mostrar()
+    
+    print("Movimiento 2: e7 → e5 (Peón negro)")
+    tablero.mover_pieza("e7", "e5")
     tablero.mostrar()
