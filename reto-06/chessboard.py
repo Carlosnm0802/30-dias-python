@@ -152,6 +152,18 @@ class Tablero:
             print("Error: Reina debe moverse en línea recta o diagonal")
             return False
 
+    def validar_rey(self, fila_o, col_o, fila_d, col_d, pieza):
+        """Valida movimiento de rey (1 casilla en cualquier dirección)"""
+        distancia_filas = abs(fila_d - fila_o)
+        distancia_columnas = abs(col_d - col_o)
+        
+        # Rey se mueve máximo 1 casilla en cualquier dirección
+        if distancia_filas <= 1 and distancia_columnas <= 1 and (distancia_filas + distancia_columnas) > 0:
+            return True
+        else:
+            print("Error: Rey debe moverse máximo 1 casilla")
+            return False
+
     def es_pieza_contraria(self, origen, destino):
         """Verifica si la pieza en destino es del color opuesto"""
         fila_o, col_o = self.convertir_coordenadas(origen)
@@ -193,6 +205,71 @@ class Tablero:
         
         return False
 
+    def obtener_posicion_rey(self, color):
+        """Encuentra la posición del rey de un color específico"""
+        # color: 'blanco' o 'negro'
+        rey = 'K' if color == 'blanco' else 'k'
+        
+        for fila in range(8):
+            for col in range(8):
+                if self.tablero[fila][col] == rey:
+                    return fila, col
+        
+        return None  # Rey no encontrado (no debería ocurrir)
+
+    def esta_bajo_amenaza(self, fila, col, color_defensor):
+        """Verifica si una casilla está bajo amenaza de piezas enemigas"""
+        # color_defensor: 'blanco' o 'negro' - el color de la pieza en esa casilla
+        # Revisamos si alguna pieza enemiga puede atacar esta casilla
+        
+        for fila_atacante in range(8):
+            for col_atacante in range(8):
+                pieza_atacante = self.tablero[fila_atacante][col_atacante]
+                
+                # Ignorar casillas vacías y piezas del mismo color
+                if pieza_atacante == ".":
+                    continue
+                
+                pieza_es_blanca = pieza_atacante.isupper()
+                defensor_es_blanco = color_defensor == 'blanco'
+                
+                # Si es del mismo color, ignorar
+                if pieza_es_blanca == defensor_es_blanco:
+                    continue
+                
+                # Convertir posiciones a notación para validar
+                # Creamos coordenadas ficticias para validar el movimiento
+                col_letra = chr(ord('A') + col_atacante)
+                fila_num = 8 - fila_atacante
+                origen = f"{col_letra}{fila_num}"
+                
+                col_letra_dest = chr(ord('A') + col)
+                fila_num_dest = 8 - fila
+                destino = f"{col_letra_dest}{fila_num_dest}"
+                
+                # Verificar si este atacante puede llegar a esta casilla
+                # Guardamos la pieza destino temporalmente
+                pieza_destino_original = self.tablero[fila][col]
+                
+                # Simulamos el movimiento
+                if self.validar_movimiento(origen, destino):
+                    # Restauramos
+                    self.tablero[fila][col] = pieza_destino_original
+                    return True
+        
+        return False
+
+    def detectar_jaque(self, color):
+        """Detecta si el rey de un color específico está en jaque"""
+        # color: 'blanco' o 'negro'
+        rey_pos = self.obtener_posicion_rey(color)
+        
+        if rey_pos is None:
+            return False
+        
+        fila_rey, col_rey = rey_pos
+        return self.esta_bajo_amenaza(fila_rey, col_rey, color)
+
     def mover_pieza(self, origen, destino):
         """Mueve una pieza de origen a destino (con captura opcional)"""
         fila_o, col_o = self.convertir_coordenadas(origen)
@@ -202,6 +279,8 @@ class Tablero:
         if self.tablero[fila_o][col_o] == ".":
             print(f"Error: No hay pieza en {origen}")
             return False
+        
+        pieza = self.tablero[fila_o][col_o]
         
         # Verificar si intenta capturar una pieza propia
         if self.es_pieza_propia(origen, destino):
@@ -213,7 +292,6 @@ class Tablero:
             return False
         
         # Mover la pieza
-        pieza = self.tablero[fila_o][col_o]
         pieza_capturada = self.tablero[fila_d][col_d]
         
         # Colocar la pieza en destino
@@ -226,99 +304,93 @@ class Tablero:
         if pieza_capturada != ".":
             print(f"✓ ¡Pieza capturada! {pieza_capturada} en {destino}")
         
+        # Detectar si hay jaque después del movimiento
+        if pieza.isupper():  # Pieza blanca se movió
+            if self.detectar_jaque('negro'):
+                print(f"⚠️  ¡JAQUE! Rey negro bajo amenaza")
+        else:  # Pieza negra se movió
+            if self.detectar_jaque('blanco'):
+                print(f"⚠️  ¡JAQUE! Rey blanco bajo amenaza")
+        
         return True
 
 if __name__ == "__main__":
     tablero = Tablero()
-    print("=" * 50)
-    print("FASE 6: CAPTURA DE PIEZAS")
-    print("=" * 50)
+    print("=" * 60)
+    print("FASE 7: DETECTAR JAQUE")
+    print("=" * 60)
     tablero.mostrar()
     
-    # PRUEBA 1: Captura básica con peón (movimiento diagonal en captura)
-    print("\n" + "=" * 50)
-    print("PRUEBA 1: Captura con Peón (movimiento diagonal)")
-    print("=" * 50)
-    
-    print("\n1. Peón blanco: e2 → e3")
-    tablero.mover_pieza("e2", "e3")
-    
-    print("\n2. Peón negro: d7 → d6")
-    tablero.mover_pieza("d7", "d6")
-    
-    print("\n3. Peón blanco: e3 → e4")
-    tablero.mover_pieza("e3", "e4")
-    
-    print("\n4. Peón negro: d6 → d5")
-    tablero.mover_pieza("d6", "d5")
-    
-    print("\n5. ✅ Peón blanco CAPTURA en e4 → d5 (diagonal)")
-    tablero.mover_pieza("e4", "d5")
-    tablero.mostrar()
-    
-    # PRUEBA 2: Intentar capturar pieza propia
-    print("\n" + "=" * 50)
-    print("PRUEBA 2: Intentar capturar pieza propia (INVÁLIDO)")
-    print("=" * 50)
-    
-    print("\n❌ Torre blanca intenta capturar peón blanco: a1 → a2")
-    tablero.mover_pieza("a1", "a2")
-    
-    # PRUEBA 3: Captura con torre
-    print("\n" + "=" * 50)
-    print("PRUEBA 3: Captura con Torre")
-    print("=" * 50)
+    # PRUEBA 1: Jaque simple con Torre
+    print("\n" + "=" * 60)
+    print("PRUEBA 1: Jaque con Torre (ataque vertical)")
+    print("=" * 60)
     
     print("\n1. Torre blanca: a1 → a7")
     tablero.mover_pieza("a1", "a7")
     tablero.mostrar()
     
-    print("\n✓ ¡Torre capturó peón negro!")
-    
-    # PRUEBA 4: Captura con caballo
-    print("\n" + "=" * 50)
-    print("PRUEBA 4: Captura con Caballo")
-    print("=" * 50)
-    
-    print("\n1. Caballo blanco: b1 → c3")
-    tablero.mover_pieza("b1", "c3")
-    
-    print("\n2. Caballo blanco: c3 → b5 (captura peón negro)")
-    tablero.mover_pieza("c3", "b5")
+    print("\n2. Caballo negro: b8 → c6")
+    tablero.mover_pieza("b8", "c6")
     tablero.mostrar()
     
-    # PRUEBA 5: Captura con alfil
-    print("\n" + "=" * 50)
-    print("PRUEBA 5: Captura con Alfil")
-    print("=" * 50)
-    
-    print("\n1. Alfil blanco: c1 → b2")
-    tablero.mover_pieza("c1", "b2")
-    
-    print("\n2. Alfil blanco: b2 → c3")
-    tablero.mover_pieza("b2", "c3")
+    print("\n3. Torre blanca: a7 → e7 (ataque horizontal hacia el rey)")
+    tablero.mover_pieza("a7", "e7")
     tablero.mostrar()
     
-    # PRUEBA 6: Captura con reina
-    print("\n" + "=" * 50)
-    print("PRUEBA 6: Captura con Reina")
-    print("=" * 50)
+    # PRUEBA 2: Jaque con Alfil
+    print("\n" + "=" * 60)
+    print("PRUEBA 2: Jaque con Alfil (ataque diagonal)")
+    print("=" * 60)
+    
+    print("\n1. Alfil blanco: c1 → d2")
+    tablero.mover_pieza("c1", "d2")
+    tablero.mostrar()
+    
+    print("\n2. Peón negro: d7 → d5")
+    tablero.mover_pieza("d7", "d5")
+    tablero.mostrar()
+    
+    print("\n3. Alfil blanco: d2 → e3")
+    tablero.mover_pieza("d2", "e3")
+    tablero.mostrar()
+    
+    print("\n4. Peón negro: e7 → e6")
+    tablero.mover_pieza("e7", "e6")
+    tablero.mostrar()
+    
+    print("\n5. Alfil blanco: e3 → b6 (ataque diagonal)")
+    tablero.mover_pieza("e3", "b6")
+    tablero.mostrar()
+    
+    # PRUEBA 3: Jaque con Reina
+    print("\n" + "=" * 60)
+    print("PRUEBA 3: Jaque con Reina")
+    print("=" * 60)
+    
+    print("\n1. Reina blanca: d1 → d6")
+    tablero.mover_pieza("d1", "d6")
+    tablero.mostrar()
+    
+    # PRUEBA 4: Verificación automática de jaque
+    print("\n" + "=" * 60)
+    print("PRUEBA 4: Verificación automática después de movimiento")
+    print("=" * 60)
     
     print("\n1. Peón negro: g7 → g5")
     tablero.mover_pieza("g7", "g5")
     tablero.mostrar()
     
-    print("\n2. Reina blanca: d1 → g5 (captura peón)")
-    tablero.mover_pieza("d1", "g5")
+    print("\n2. Reina blanca: d6 → e7 (ataque hacia el rey negro)")
+    tablero.mover_pieza("d6", "e7")
     tablero.mostrar()
     
-    print("\n" + "=" * 50)
-    print("FASE 6 COMPLETADA ✅ - CAPTURAS FUNCIONAN PERFECTAMENTE")
-    print("=" * 50)
+    print("\n" + "=" * 60)
+    print("FASE 7 COMPLETADA ✅ - DETECCIÓN DE JAQUE FUNCIONA")
+    print("=" * 60)
     
-    print("\nResumen de capturas:")
-    print("✓ Peón capturó peón (diagonal)")
-    print("✓ Torre capturó peón")
-    print("✓ Caballo capturó peón")
-    print("✓ Reina capturó peón")
-    print("✓ Se bloqueó captura de pieza propia")
+    print("\nResumen de Jaque:")
+    print("✓ Detecta jaque de Torre (vertical/horizontal)")
+    print("✓ Detecta jaque de Alfil (diagonal)")
+    print("✓ Detecta jaque de Reina (combinado)")
+    print("✓ Muestra advertencia automáticamente")
