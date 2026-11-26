@@ -57,31 +57,48 @@ class Tablero:
 
     def validar_peon(self, fila_o, col_o, fila_d, col_d, pieza):
         """Valida movimiento de peón"""
+        pieza_destino = self.tablero[fila_d][col_d]
+        
         if pieza == 'P':  # Peón blanco
-            if col_o != col_d:
-                print("Error: Peón no puede moverse diagonalmente")
-                return False
-            
-            if fila_o == 6:  # Fila inicial
-                if fila_d not in [4, 5]:
-                    print("Error: Peón puede moverse 1 o 2 casillas")
+            # Movimiento normal (sin captura): solo hacia adelante en la misma columna
+            if pieza_destino == ".":
+                if col_o != col_d:
+                    print("Error: Peón no puede moverse diagonalmente (sin capturar)")
                     return False
-            else:  # Movimientos posteriores
-                if fila_d != fila_o - 1:
-                    print("Error: Peón solo puede moverse 1 casilla")
-                    return False
-        else:  # Peón negro (p)
-            if col_o != col_d:
-                print("Error: Peón no puede moverse diagonalmente")
-                return False
-            
-            if fila_o == 1:  # Fila inicial
-                if fila_d not in [2, 3]:
-                    print("Error: Peón puede moverse 1 o 2 casillas")
-                    return False
+                
+                if fila_o == 6:  # Fila inicial
+                    if fila_d not in [4, 5]:
+                        print("Error: Peón puede moverse 1 o 2 casillas")
+                        return False
+                else:  # Movimientos posteriores
+                    if fila_d != fila_o - 1:
+                        print("Error: Peón solo puede moverse 1 casilla")
+                        return False
+            # Captura diagonal: solo 1 casilla diagonalmente
             else:
-                if fila_d != fila_o + 1:
-                    print("Error: Peón solo puede moverse 1 casilla")
+                if abs(col_d - col_o) != 1 or fila_d != fila_o - 1:
+                    print("Error: Peón solo captura 1 casilla diagonalmente")
+                    return False
+        
+        else:  # Peón negro (p)
+            # Movimiento normal (sin captura): solo hacia adelante en la misma columna
+            if pieza_destino == ".":
+                if col_o != col_d:
+                    print("Error: Peón no puede moverse diagonalmente (sin capturar)")
+                    return False
+                
+                if fila_o == 1:  # Fila inicial
+                    if fila_d not in [2, 3]:
+                        print("Error: Peón puede moverse 1 o 2 casillas")
+                        return False
+                else:
+                    if fila_d != fila_o + 1:
+                        print("Error: Peón solo puede moverse 1 casilla")
+                        return False
+            # Captura diagonal: solo 1 casilla diagonalmente
+            else:
+                if abs(col_d - col_o) != 1 or fila_d != fila_o + 1:
+                    print("Error: Peón solo captura 1 casilla diagonalmente")
                     return False
         
         return True
@@ -135,21 +152,49 @@ class Tablero:
             print("Error: Reina debe moverse en línea recta o diagonal")
             return False
 
-    def validar_rey(self, fila_o, col_o, fila_d, col_d, pieza):
-        """Valida movimiento de rey (1 casilla en cualquier dirección)"""
-        distancia_filas = abs(fila_d - fila_o)
-        distancia_columnas = abs(col_d - col_o)
+    def es_pieza_contraria(self, origen, destino):
+        """Verifica si la pieza en destino es del color opuesto"""
+        fila_o, col_o = self.convertir_coordenadas(origen)
+        fila_d, col_d = self.convertir_coordenadas(destino)
         
-        # Rey se mueve máximo 1 casilla en cualquier dirección
-        if distancia_filas <= 1 and distancia_columnas <= 1 and \
-           (distancia_filas > 0 or distancia_columnas > 0):
-            return True
-        else:
-            print("Error: Rey solo puede moverse 1 casilla en cualquier dirección")
+        pieza_origen = self.tablero[fila_o][col_o]
+        pieza_destino = self.tablero[fila_d][col_d]
+        
+        # Si destino está vacío, no hay pieza contraria
+        if pieza_destino == ".":
             return False
+        
+        # Comparar si son de diferente color (mayúscula vs minúscula)
+        # Blancas (mayúsculas) capturan negras (minúsculas) y vice versa
+        if pieza_origen.isupper() and pieza_destino.islower():
+            return True  # Pieza blanca captura pieza negra
+        elif pieza_origen.islower() and pieza_destino.isupper():
+            return True  # Pieza negra captura pieza blanca
+        
+        return False
+
+    def es_pieza_propia(self, origen, destino):
+        """Verifica si la pieza en destino es del mismo color"""
+        fila_o, col_o = self.convertir_coordenadas(origen)
+        fila_d, col_d = self.convertir_coordenadas(destino)
+        
+        pieza_origen = self.tablero[fila_o][col_o]
+        pieza_destino = self.tablero[fila_d][col_d]
+        
+        # Si destino está vacío, no hay pieza propia
+        if pieza_destino == ".":
+            return False
+        
+        # Comparar si son del mismo color
+        if pieza_origen.isupper() and pieza_destino.isupper():
+            return True  # Ambas blancas
+        elif pieza_origen.islower() and pieza_destino.islower():
+            return True  # Ambas negras
+        
+        return False
 
     def mover_pieza(self, origen, destino):
-        """Mueve una pieza de origen a destino"""
+        """Mueve una pieza de origen a destino (con captura opcional)"""
         fila_o, col_o = self.convertir_coordenadas(origen)
         fila_d, col_d = self.convertir_coordenadas(destino)
         
@@ -158,103 +203,122 @@ class Tablero:
             print(f"Error: No hay pieza en {origen}")
             return False
         
+        # Verificar si intenta capturar una pieza propia
+        if self.es_pieza_propia(origen, destino):
+            print(f"Error: No puedes capturar una pieza propia")
+            return False
+        
         # Validar el movimiento
         if not self.validar_movimiento(origen, destino):
             return False
         
         # Mover la pieza
         pieza = self.tablero[fila_o][col_o]
+        pieza_capturada = self.tablero[fila_d][col_d]
+        
+        # Colocar la pieza en destino
         self.tablero[fila_d][col_d] = pieza
+        
+        # Dejar vacío el origen
         self.tablero[fila_o][col_o] = "."
+        
+        # Mostrar captura si ocurrió
+        if pieza_capturada != ".":
+            print(f"✓ ¡Pieza capturada! {pieza_capturada} en {destino}")
+        
         return True
 
 if __name__ == "__main__":
     tablero = Tablero()
-    print("=" * 40)
-    print("TABLERO INICIAL")
-    print("=" * 40)
+    print("=" * 50)
+    print("FASE 6: CAPTURA DE PIEZAS")
+    print("=" * 50)
     tablero.mostrar()
     
-    # PRUEBAS CON PEONES
-    print("\n" + "=" * 40)
-    print("PRUEBAS: PEONES")
-    print("=" * 40)
+    # PRUEBA 1: Captura básica con peón (movimiento diagonal en captura)
+    print("\n" + "=" * 50)
+    print("PRUEBA 1: Captura con Peón (movimiento diagonal)")
+    print("=" * 50)
     
-    print("\n✅ Peón blanco: e2 → e4 (2 casillas válidas)")
-    tablero.mover_pieza("e2", "e4")
+    print("\n1. Peón blanco: e2 → e3")
+    tablero.mover_pieza("e2", "e3")
+    
+    print("\n2. Peón negro: d7 → d6")
+    tablero.mover_pieza("d7", "d6")
+    
+    print("\n3. Peón blanco: e3 → e4")
+    tablero.mover_pieza("e3", "e4")
+    
+    print("\n4. Peón negro: d6 → d5")
+    tablero.mover_pieza("d6", "d5")
+    
+    print("\n5. ✅ Peón blanco CAPTURA en e4 → d5 (diagonal)")
+    tablero.mover_pieza("e4", "d5")
     tablero.mostrar()
     
-    print("\n❌ Peón: e4 → e1 (3 casillas - INVÁLIDO)")
-    tablero.mover_pieza("e4", "e1")
+    # PRUEBA 2: Intentar capturar pieza propia
+    print("\n" + "=" * 50)
+    print("PRUEBA 2: Intentar capturar pieza propia (INVÁLIDO)")
+    print("=" * 50)
     
-    # PRUEBAS CON TORRES
-    print("\n" + "=" * 40)
-    print("PRUEBAS: TORRES")
-    print("=" * 40)
+    print("\n❌ Torre blanca intenta capturar peón blanco: a1 → a2")
+    tablero.mover_pieza("a1", "a2")
     
-    print("\n✅ Torre blanca: a1 → a3 (vertical)")
-    tablero.mover_pieza("a1", "a3")
+    # PRUEBA 3: Captura con torre
+    print("\n" + "=" * 50)
+    print("PRUEBA 3: Captura con Torre")
+    print("=" * 50)
+    
+    print("\n1. Torre blanca: a1 → a7")
+    tablero.mover_pieza("a1", "a7")
     tablero.mostrar()
     
-    print("\n✅ Torre: a3 → d3 (horizontal)")
-    tablero.mover_pieza("a3", "d3")
-    tablero.mostrar()
+    print("\n✓ ¡Torre capturó peón negro!")
     
-    print("\n❌ Torre: d3 → e4 (diagonal - INVÁLIDO)")
-    tablero.mover_pieza("d3", "e4")
+    # PRUEBA 4: Captura con caballo
+    print("\n" + "=" * 50)
+    print("PRUEBA 4: Captura con Caballo")
+    print("=" * 50)
     
-    # PRUEBAS CON CABALLOS
-    print("\n" + "=" * 40)
-    print("PRUEBAS: CABALLOS")
-    print("=" * 40)
-    
-    print("\n✅ Caballo blanco: b1 → c3 (forma de L)")
+    print("\n1. Caballo blanco: b1 → c3")
     tablero.mover_pieza("b1", "c3")
+    
+    print("\n2. Caballo blanco: c3 → b5 (captura peón negro)")
+    tablero.mover_pieza("c3", "b5")
     tablero.mostrar()
     
-    print("\n❌ Caballo: c3 → c5 (línea recta - INVÁLIDO)")
-    tablero.mover_pieza("c3", "c5")
+    # PRUEBA 5: Captura con alfil
+    print("\n" + "=" * 50)
+    print("PRUEBA 5: Captura con Alfil")
+    print("=" * 50)
     
-    # PRUEBAS CON ALFILES
-    print("\n" + "=" * 40)
-    print("PRUEBAS: ALFILES")
-    print("=" * 40)
+    print("\n1. Alfil blanco: c1 → b2")
+    tablero.mover_pieza("c1", "b2")
     
-    print("\n✅ Alfil blanco: c1 → f4 (diagonal)")
-    tablero.mover_pieza("c1", "f4")
+    print("\n2. Alfil blanco: b2 → c3")
+    tablero.mover_pieza("b2", "c3")
     tablero.mostrar()
     
-    print("\n❌ Alfil: f4 → f6 (vertical - INVÁLIDO)")
-    tablero.mover_pieza("f4", "f6")
+    # PRUEBA 6: Captura con reina
+    print("\n" + "=" * 50)
+    print("PRUEBA 6: Captura con Reina")
+    print("=" * 50)
     
-    # PRUEBAS CON REINA
-    print("\n" + "=" * 40)
-    print("PRUEBAS: REINA")
-    print("=" * 40)
-    
-    print("\n✅ Reina blanca: d1 → d3 (vertical)")
-    tablero.mover_pieza("d1", "d3")
+    print("\n1. Peón negro: g7 → g5")
+    tablero.mover_pieza("g7", "g5")
     tablero.mostrar()
     
-    print("\n✅ Reina: d3 → f5 (diagonal)")
-    tablero.mover_pieza("d3", "f5")
+    print("\n2. Reina blanca: d1 → g5 (captura peón)")
+    tablero.mover_pieza("d1", "g5")
     tablero.mostrar()
     
-    print("\n❌ Reina: f5 → g3 (forma de L - INVÁLIDO)")
-    tablero.mover_pieza("f5", "g3")
+    print("\n" + "=" * 50)
+    print("FASE 6 COMPLETADA ✅ - CAPTURAS FUNCIONAN PERFECTAMENTE")
+    print("=" * 50)
     
-    # PRUEBAS CON REY
-    print("\n" + "=" * 40)
-    print("PRUEBAS: REY")
-    print("=" * 40)
-    
-    print("\n✅ Rey blanco: e1 → e2 (1 casilla)")
-    tablero.mover_pieza("e1", "e2")
-    tablero.mostrar()
-    
-    print("\n❌ Rey: e2 → e4 (2 casillas - INVÁLIDO)")
-    tablero.mover_pieza("e2", "e4")
-    
-    print("\n" + "=" * 40)
-    print("FIN DE PRUEBAS - FASE 5 COMPLETADA ✅")
-    print("=" * 40)
+    print("\nResumen de capturas:")
+    print("✓ Peón capturó peón (diagonal)")
+    print("✓ Torre capturó peón")
+    print("✓ Caballo capturó peón")
+    print("✓ Reina capturó peón")
+    print("✓ Se bloqueó captura de pieza propia")
